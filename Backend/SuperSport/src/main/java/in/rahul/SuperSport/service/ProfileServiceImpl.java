@@ -95,7 +95,7 @@ public class ProfileServiceImpl implements ProfileService{
                                         .orElseThrow(() -> new UsernameNotFoundException("User not found: "+email));
         if(existingUser.getResetOtp() == null || !existingUser.getResetOtp().equals(otp)){
             throw new RuntimeException("Invalid OTP");
-        }        
+        }
         if(existingUser.getResetOtpExpireAt() < System.currentTimeMillis()){
             throw new RuntimeException("OTP Expired");
         }
@@ -128,11 +128,30 @@ public class ProfileServiceImpl implements ProfileService{
         //save into db
 
         userRepository.save(existingUser);
+
+        try{
+            emailService.sendVerifyOtpEmail(email, otp);
+        }catch(Exception e){
+            throw new RuntimeException("Unable to send email");
+        }
     }
 
     @Override
     public void verifyOtp(String email, String otp) {
+        UserEntity existingUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: "+email));
+        if(existingUser.getVerifyOtp() == null || !existingUser.getVerifyOtp().equals(otp)){
+            throw new RuntimeException("Invalid OTP");
+        }
+        if(existingUser.getVerifyOtpExpireAt()<System.currentTimeMillis()){
+            throw new RuntimeException("OTP Expired");
+        }
 
+        existingUser.setIsAccountVerified(true);
+        existingUser.setVerifyOtp(null);
+        existingUser.setVerifyOtpExpireAt(0L);
+
+        userRepository.save(existingUser);
     }
 
     @Override
