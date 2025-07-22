@@ -1,13 +1,54 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useContext, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
-
+import axios from 'axios';
+import { AppContext } from '../context/AppContext';
+import {toast} from 'react-toastify';
 const Login = () => {
     const [isCreateAccount, setIsCreateAccount] = useState(false);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const {backendURL, setIsLoggedIn}  = useContext(AppContext);
+
+    const onSubmitHandler = async (e) =>{
+        e.preventDefault();
+        axios.defaults.withCredentials = true;
+        setLoading(true);
+        try{
+          if(isCreateAccount){
+            // register API
+            const response = await axios.post(`${backendURL}/register`,{name, email, password});
+            if(response.status === 201){
+              navigate('/');
+              toast.success("Account created successfully.");
+            }
+            else{
+              toast.error("Email already exists");
+            }
+          }
+          else{
+            // login API
+            const response = await axios.post(`${backendURL}/login`,{email, password});
+            if(response.status === 200){
+              setIsLoggedIn(true);
+              navigate('/');
+              toast.success("Login Successful");
+            }
+            else{
+              toast.error("Invalid Credentials");
+            }
+          }
+        }
+        catch(error){
+          toast.error(error.message);
+        }
+        finally{
+          setLoading(false);
+        }
+    }
   return (
 
     <div className="position-relative min-vh-100 d-flex justify-content-center align-items-center"
@@ -29,7 +70,7 @@ const Login = () => {
           <h2 className="text-center mb-4">
             {isCreateAccount? "Create Account" : "Login"}
           </h2>
-          <form>
+          <form onSubmit={onSubmitHandler}>
             {
                 isCreateAccount && (
                   <div className="mb-3">
@@ -75,8 +116,8 @@ const Login = () => {
                   Forgot password!
                 </Link>
             </div>
-            <button className="btn btn-primary w-100">
-                {isCreateAccount ? "Sign Up": "Login"}
+            <button className="btn btn-primary w-100" disabled={loading}>
+                {loading ? "Loading...": isCreateAccount ? "Sign Up": "Login"}
             </button>
           </form>
 
